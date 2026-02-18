@@ -117,9 +117,9 @@ run_validation() {
     rm -f aot-cache-app.log
 
     if [ "$CACHE_FILE" == "none" ]; then
-        java -jar $APP_DIR/dogs-0.0.1-SNAPSHOT.jar > aot-cache-app.log 2>&1 &
+        ((/usr/bin/time -l java -jar $APP_DIR/dogs-0.0.1-SNAPSHOT.jar) &> aot-cache-app.log) &
     else
-        java -XX:AOTCache=$CACHE_FILE -jar $APP_DIR/dogs-0.0.1-SNAPSHOT.jar > aot-cache-app.log 2>&1 &
+        ((/usr/bin/time -l java -XX:AOTCache=$CACHE_FILE -jar $APP_DIR/dogs-0.0.1-SNAPSHOT.jar) &> aot-cache-app.log) &
     fi
     APP_PID=$!
     sleep "$SLEEP_SECONDS"
@@ -132,12 +132,15 @@ run_validation() {
     done
 
     echo "-> Stopping application..."
-    kill $APP_PID
+    JAVA_PID=$(pgrep -f "^java.*-jar.*dogs-0.0.1-SNAPSHOT.jar")
+    kill $JAVA_PID
     wait $APP_PID 2>/dev/null
+    echo "-> [METRIC 3] Detailed CPU Usage:"
+    tail -n 18 aot-cache-app.log
     echo ""
 }
 
-build
+#build
 
 echo "======================================================================"
 echo "FINAL RESULTS: VALIDATING 'TIME-TO-FIRST-RESPONSE'"
